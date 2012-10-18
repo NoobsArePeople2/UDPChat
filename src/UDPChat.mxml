@@ -27,7 +27,7 @@
                 socket.bind(localPort, localIp);
                 socket.receive();
                 
-                doSend("Hello");
+                doSend("**Connected**");
             }
             
             private function doSend(msg:String):void
@@ -51,7 +51,7 @@
             
             private function onData(e:DatagramSocketDataEvent):void
             {
-                addMessage("Them: " + e.data.readUTFBytes(e.data.bytesAvailable));
+                addMessage("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
             }
             
             private function onSend(s:MouseEvent):void
