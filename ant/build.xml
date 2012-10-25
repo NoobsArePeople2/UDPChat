@@ -1,0 +1,109 @@
+<project
+  name="ShibaShiba"
+  default="desktop-pack"
+  basedir="../">
+
+  <description>Ant build script for UDPChat</description>
+
+  <property
+    file="ant/build.win.properties"/>
+
+  <!-- The initialization process -->
+  <target
+    name="-init">
+
+    <echo message="Initializing..."/>
+    <delete dir="${BIN_DIR}"/>
+    <mkdir dir="${BIN_DIR}"/>
+
+  </target>
+
+  <!-- The AMXMLC Compile task -->
+  <target
+    name="-amxmlc">
+
+  <echo message="${AMXMLC}"/>
+
+    <exec
+      executable="${AMXMLC}"
+      failonerror="true">
+
+      <arg value="-debug=${DEBUG_BUILD}"/>
+      <arg value="-file-specs=${MAIN_SOURCE_FILE}"/>
+      <arg value="-output=${BIN_DIR}/${OUTPUT_FILE}"/>
+      <arg value="-source-path=${SOURCE_FOLDER}"/>
+
+      <arg value="-static-link-runtime-shared-libraries=true"/>
+      <arg value="-library-path+=${FLEX_HOME}/frameworks/libs"/>
+      <arg value="-library-path+=${FLEX_HOME}/frameworks/libs/air"/>
+      <arg value="-target-player=11.4"/>
+
+    </exec>
+
+  </target>
+
+  <target
+    name="desktopc"
+    description="Compiles the desktop build."
+  	depends="-init">
+
+  	<copy
+      toFile="${BIN_DIR}/${APP_DESCRIPTOR}"
+      file="${MANIFESTS_DIR}/${APP_DESCRIPTOR}"/>
+  	
+  	<replace
+	  file="${BIN_DIR}/${APP_DESCRIPTOR}"
+	  token="[This value will be overwritten by Flash Builder in the output app.xml]"
+	  value="${BIN_DIR}/${OUTPUT_FILE}"/>
+  	
+    <antcall
+      target="-amxmlc">
+
+      <param
+        name="DEBUG_BUILD"
+        value="false"/>
+
+    </antcall>
+
+  </target>
+
+  <target
+    name="desktop-pack"
+    description="Packages a desktop build as a captive runtime."
+  	depends="desktopc">
+
+  	<echo message="Packaging captive runtime..."/>
+  	
+    <exec
+      executable="${ADT}"
+      failonerror="true">
+
+      <arg value="-package"/>
+
+	  <!-- <arg value="-keystore ${KEYSTORE}"/>  -->
+      <arg value="-keystore"/>
+      <arg value="${KEYSTORE}"/>
+    	
+      <!-- <arg value="-storetype pkcs12"/> -->
+      <arg value="-storetype"/>
+      <arg value="pkcs12"/>
+
+      <!-- <arg value="-keypass ${STOREPASS}"/> -->
+      <!-- <arg value="-storepass ${STOREPASS}"/> -->
+      <arg value="-storepass"/>
+      <arg value="${STOREPASS}"/>
+
+      <arg value="-target"/>
+      <arg value="bundle"/>
+
+      <arg value="${BIN_DIR}/UDPChat"/>
+      <arg value=""/>
+      <arg value="${BIN_DIR}/${APP_DESCRIPTOR}"/>
+      <arg value=""/>
+      <arg value="${BIN_DIR}/${OUTPUT_FILE}"/>
+
+    </exec>
+
+  </target>
+
+</project>
