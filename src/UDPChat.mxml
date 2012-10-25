@@ -11,6 +11,12 @@
     
     <fx:Script>
         <![CDATA[
+            import com.adobe.crypto.MD5;
+            
+            
+            private const PROTOCOL_ID:uint = uint("0x" + MD5.hash("UDPChat!!!!").substr(0, 8).toUpperCase());
+            
+            private var sockets:Vector.<DatagramSocket>;
             
             private var socket:DatagramSocket;
             
@@ -30,6 +36,43 @@
                 doSend("**Connected**");
             }
             
+            private function findInterfaces():void
+            {
+                sockets = new Vector.<DatagramSocket>();
+                var netInterfaces:Vector.<NetworkInterface> = NetworkInfo.networkInfo.findInterfaces();
+                if (netInterfaces && netInterfaces.length > 0) 
+                {    
+                    for each (var i:NetworkInterface in netInterfaces) 
+                    {
+                        if (i.active) 
+                        {
+                            var addresses:Vector.<InterfaceAddress> = i.addresses;
+                            for each (var j:InterfaceAddress in addresses) 
+                            {
+                                trace("- Host : " + j.address);
+                                var s:DatagramSocket = new DatagramSocket();
+                                s.addEventListener(DatagramSocketDataEvent.DATA, onSocketSetup);
+                                s.bind(localPort, j.address);
+                                sockets.push(s);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            private function onSocketSetup(e:DatagramSocketDataEvent):void
+            {
+                if (e.data.bytesAvailable > 4)
+                {
+                    var proto:uint = e.data.readUnsignedInt();
+                    if (proto == PROTOCOL_ID)
+                    {
+                        trace("CONNECTION FROM (" + e.srcAddress + ": " + e.srcPort));
+                    }
+                }
+                
+            }
+            
             private function doSend(msg:String):void
             {
                 var data:ByteArray = new ByteArray();
@@ -40,8 +83,13 @@
             private function onConnectClick(e:MouseEvent):void
             {
                 targetIp = otherIp.text;
-                localIp = thisIp.text;
+//                localIp = thisIp.text;
                 doConnect();
+            }
+            
+            private function onHostClick(e:MouseEvent):void
+            {
+                findInterfaces();
             }
             
             private function addMessage(msg:String):void
@@ -81,44 +129,74 @@
             paddingLeft="12"/>
     </s:layout>
     
-    <s:Label
-        text="Other Computer Address"/>
+    <s:states>
+        
+        <s:State name="init"/>
+        <s:State name="chat"/>
+                
+    </s:states>
     
-    <s:TextInput
-        id="otherIp"/>
+    <s:Group
+        includeIn="init"
+        percentWidth="100"
+        percentHeight="100">
+        
+        <s:layout>
+            <s:VerticalLayout
+                gap="12"
+                horizontalAlign="center"
+                verticalAlign="middle"/>
+        </s:layout>
+        
+        <s:Label
+            text="Connect To"/>
+        
+        <s:TextInput
+            id="otherIp"/>
+        
+        <s:Button
+            id="connect"
+            label="Connect"
+            click="onConnectClick(event)"/>
+        
+        <mx:HRule
+            percentWidth="100"/>
+        
+        <s:Button
+            id="host"
+            label="Host"
+            click="onHostClick(event)"/>
+        
+    </s:Group>
     
-    <s:Label
-        text="This Computer Address"/>
-    
-    <s:TextInput
-        id="thisIp"/>
-    
-    <s:Button
-        id="connect"
-        label="Connect"
-        click="onConnectClick(event)"/>
-    
-    <s:Label
-        text="Chat Log"/>
-    
-    <s:TextArea
-        id="chatLog"
-        width="100%"
-        height="200"/>
-    
-    <s:Label
-        text="Send This"/>
-    
-    <s:TextInput
-        id="chatMsg"
-        width="100%"
-        enter="onEnter()"/>
-    
-    <s:Button
-        id="send"
-        label="Send"
-        width="100%"
-        click="onSend(event)"
-        enabled="{chatMsg.text.length > 0}"/>
+    <s:VGroup
+        includeIn="chat"
+        percentWidth="100"
+        percentHeight="100">
+        
+        <s:Label
+            text="Chat Log"/>
+        
+        <s:TextArea
+            id="chatLog"
+            width="100%"
+            height="200"/>
+        
+        <s:Label
+            text="Send This"/>
+        
+        <s:TextInput
+            id="chatMsg"
+            width="100%"
+            enter="onEnter()"/>
+        
+        <s:Button
+            id="send"
+            label="Send"
+            width="100%"
+            click="onSend(event)"
+            enabled="{chatMsg.text.length > 0}"/>
+        
+    </s:VGroup>
     
 </s:WindowedApplication>

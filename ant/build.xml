@@ -74,22 +74,22 @@
 
   	<echo message="Packaging captive runtime..."/>
   	
+  	<!-- 
+  		See: http://help.adobe.com/en_US/air/build/WSfffb011ac560372f709e16db131e43659b9-8000.html
+  	--> 
+  	
     <exec
       executable="${ADT}"
       failonerror="true">
 
       <arg value="-package"/>
 
-	  <!-- <arg value="-keystore ${KEYSTORE}"/>  -->
       <arg value="-keystore"/>
       <arg value="${KEYSTORE}"/>
-    	
-      <!-- <arg value="-storetype pkcs12"/> -->
+
       <arg value="-storetype"/>
       <arg value="pkcs12"/>
 
-      <!-- <arg value="-keypass ${STOREPASS}"/> -->
-      <!-- <arg value="-storepass ${STOREPASS}"/> -->
       <arg value="-storepass"/>
       <arg value="${STOREPASS}"/>
 
