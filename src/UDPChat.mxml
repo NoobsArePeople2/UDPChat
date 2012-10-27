@@ -3,7 +3,8 @@
     xmlns:fx="http://ns.adobe.com/mxml/2009" 
     xmlns:s="library://ns.adobe.com/flex/spark" 
     xmlns:mx="library://ns.adobe.com/flex/mx"
-    showStatusBar="false">
+    showStatusBar="false"
+    close="onClose(event)">
     
     <fx:Declarations>
         <!-- Place non-visual elements (e.g., services, value objects) here -->
@@ -13,30 +14,50 @@
         <![CDATA[
             import com.adobe.crypto.MD5;
             
+            import mx.controls.Alert;
+            
             
             private const PROTOCOL_ID:uint = uint("0x" + MD5.hash("UDPChat!!!!").substr(0, 8).toUpperCase());
+            
+            private const HOST:String = "host";
+            private const CLIENT:String = "client";
             
             private var sockets:Vector.<DatagramSocket>;
             
             private var socket:DatagramSocket;
+            private var clients:Vector.<Client>;
             
             private var targetIp:String;
             private var targetPort:int = 54321;
             
             private var localIp:String;
             private var localPort:int = 54321;
+            
+            private var msg:ByteArray;
                         
             private function doConnect():void
             {
-                socket = new DatagramSocket();
-                socket.addEventListener(DatagramSocketDataEvent.DATA, onData);
-                socket.bind(localPort, localIp);
-                socket.receive();
+//                socket = new DatagramSocket();
+//                socket.addEventListener(DatagramSocketDataEvent.DATA, onData);
+//                socket.bind(localPort, localIp);
+//                socket.receive();
+//                
+//                doSend("**Connected**");
                 
-                doSend("**Connected**");
+                findInterfaces(CLIENT);
+                
+                sockets.forEach(function(item:DatagramSocket, index:int, vector:Vector.<DatagramSocket>):void
+                {
+                    msg = new ByteArray();
+                    msg.writeUnsignedInt(PROTOCOL_ID);
+                    msg.writeUTFBytes("**HELLO**");
+                    sendMessage(item, msg, new Client(targetIp, targetPort));
+                });
+                
+                
             }
             
-            private function findInterfaces():void
+            private function findInterfaces(connectionType:String):void
             {
                 sockets = new Vector.<DatagramSocket>();
                 var netInterfaces:Vector.<NetworkInterface> = NetworkInfo.networkInfo.findInterfaces();
@@ -49,39 +70,123 @@
                             var addresses:Vector.<InterfaceAddress> = i.addresses;
                             for each (var j:InterfaceAddress in addresses) 
                             {
-                                trace("- Host : " + j.address);
-                                var s:DatagramSocket = new DatagramSocket();
-                                s.addEventListener(DatagramSocketDataEvent.DATA, onSocketSetup);
-                                s.bind(localPort, j.address);
-                                sockets.push(s);
+                                if (j.address.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/))
+                                {
+                                    log("- Host : " + j.address + ":" + localPort.toString());
+                                    var s:DatagramSocket = new DatagramSocket();
+                                    if (connectionType == HOST)
+                                    {
+                                        s.addEventListener(DatagramSocketDataEvent.DATA, onSocketHostSetup);
+                                    }
+                                    else
+                                    {
+                                        s.addEventListener(DatagramSocketDataEvent.DATA, onSocketClientSetup);
+                                    }
+                                    s.bind(localPort, j.address);
+                                    s.receive();
+                                    sockets.push(s);
+                                }
                             }
                         }
                     }
                 }
             }
             
-            private function onSocketSetup(e:DatagramSocketDataEvent):void
+            private function onSocketHostSetup(e:DatagramSocketDataEvent):void
             {
                 if (e.data.bytesAvailable > 4)
                 {
                     var proto:uint = e.data.readUnsignedInt();
                     if (proto == PROTOCOL_ID)
                     {
-                        trace("CONNECTION FROM (" + e.srcAddress + ": " + e.srcPort));
+                        log("CONNECTION FROM: " + e.srcAddress + ": " + e.srcPort);
+                        socket = e.target as DatagramSocket;
+                        var i:int = sockets.length - 1;
+                        while (i > -1)
+                        {
+                            var s:DatagramSocket = sockets[i];
+                            if (s != socket)
+                            {
+                                s.removeEventListener(DatagramSocketDataEvent.DATA, onSocketHostSetup);
+                                s.close();
+                            }
+                            --i;
+                        }
+                        sockets = null;
+
+                        socket.removeEventListener(DatagramSocketDataEvent.DATA, onSocketHostSetup);
+                        socket.addEventListener(DatagramSocketDataEvent.DATA, onData);
+                        
+                        var client:Client = new Client(e.srcAddress, e.srcPort);
+                        clients.push(client);
+                        msg = new ByteArray();
+                        msg.writeUnsignedInt(PROTOCOL_ID);
+                        msg.writeUTFBytes("**WE BE CONNECTED**");
+                        sendMessage(socket, msg, client);
                     }
                 }
                 
             }
             
-            private function doSend(msg:String):void
+            private function onSocketClientSetup(e:DatagramSocketDataEvent):void
+            {
+                if (e.data.bytesAvailable > 4)
+                {
+                    var proto:uint = e.data.readUnsignedInt();
+                    if (proto == PROTOCOL_ID)
+                    {
+                        log("CONNECTION FROM: " + e.srcAddress + ": " + e.srcPort);
+                        socket = e.target as DatagramSocket;
+                        var i:int = sockets.length - 1;
+                        while (i > -1)
+                        {
+                            var s:DatagramSocket = sockets[i];
+                            if (s != socket)
+                            {
+                                s.removeEventListener(DatagramSocketDataEvent.DATA, onSocketClientSetup);
+                                s.close();
+                            }
+                            --i;
+                        }
+                        sockets = null;
+                        
+                        socket.removeEventListener(DatagramSocketDataEvent.DATA, onSocketClientSetup);
+                        socket.addEventListener(DatagramSocketDataEvent.DATA, onData);
+                        
+                        var client:Client = new Client(e.srcAddress, e.srcPort);
+                        clients.push(client);
+                        msg = new ByteArray();
+                        msg.writeUnsignedInt(PROTOCOL_ID);
+                        msg.writeUTFBytes("**WE BE CONNECTED**");
+                        sendMessage(socket, msg, client);
+                    }
+                }
+            }
+            
+            private function doSend(msg:String, theSocket:DatagramSocket = null):void
             {
                 var data:ByteArray = new ByteArray();
                 data.writeUTFBytes(msg);
-                socket.send(data, 0, 0, targetIp, targetPort);
+                
+                if (theSocket)
+                {
+                    theSocket.send(data, 0, 0, targetIp, targetPort);
+                }
+                else
+                {
+                    socket.send(data, 0, 0, targetIp, targetPort);
+                }
+            }
+            
+            private function sendMessage(socket:DatagramSocket, msg:ByteArray, dest:Client):void
+            {
+                log("Sending message to: " + dest.ip + ":" + dest.port + " from " + socket.localAddress + ":" + socket.localPort.toString());
+                socket.send(msg, 0, 0, dest.ip, dest.port);
             }
             
             private function onConnectClick(e:MouseEvent):void
             {
+                clients = new Vector.<Client>();
                 targetIp = otherIp.text;
 //                localIp = thisIp.text;
                 doConnect();
@@ -89,7 +194,8 @@
             
             private function onHostClick(e:MouseEvent):void
             {
-                findInterfaces();
+                clients = new Vector.<Client>();
+                findInterfaces(HOST);
             }
             
             private function addMessage(msg:String):void
@@ -100,6 +206,7 @@
             private function onData(e:DatagramSocketDataEvent):void
             {
                 addMessage("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
+                log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
             }
             
             private function onSend(s:MouseEvent):void
@@ -114,6 +221,34 @@
                 if (chatMsg.text.length > 0)
                 {
                     onSend(null);
+                }
+            }
+            
+            private function onClose(e:Event):void
+            {
+                if (sockets)
+                {
+                    var i:int = sockets.length - 1;
+                    while (i > -1)
+                    {
+                        sockets[i].close();
+                        --i;
+                    }
+                }
+                
+                if (socket)
+                {
+                    socket.close();
+                }
+            }
+            
+            private function log(msg:String):void
+            {
+                trace(msg);
+                if (logArea)
+                {
+                    logArea.text += msg;
+                    logArea.text += "\n";
                 }
             }
              
@@ -152,7 +287,8 @@
             text="Connect To"/>
         
         <s:TextInput
-            id="otherIp"/>
+            id="otherIp"
+            text="192.168.0.100"/>
         
         <s:Button
             id="connect"
@@ -167,6 +303,15 @@
             label="Host"
             click="onHostClick(event)"/>
         
+        <s:Spacer
+            percentHeight="100"/>
+        
+        <s:TextArea
+            id="logArea"
+            percentWidth="100"
+            height="100"
+            editable="false"/>
+            
     </s:Group>
     
     <s:VGroup
