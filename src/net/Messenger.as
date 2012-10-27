@@ -1,11 +1,10 @@
-/**
- *
- * @author		Sean Monahan sean@seanmonahan.org
- * @created
- * @version		1.0.0
- */
-package
+package net
 {
+    import flash.net.DatagramSocket;
+    import flash.utils.ByteArray;
+    
+    import util.Logger;
+
     //==============================
     // Imports
     //==============================
@@ -13,7 +12,7 @@ package
     /**
      *
      */
-    public class Client
+    public class Messenger
     {
         //==============================
         // Constants
@@ -23,16 +22,6 @@ package
         // Vars
         //==============================
         
-        /**
-         * IPv4 address.
-         */
-        public var ip:String;
-        
-        /**
-         * Port.
-         */
-        public var port:int;
-        
         //==============================
         // Properties
         //==============================
@@ -41,15 +30,19 @@ package
         // Constructor
         //==============================
         
-        public function Client(ip:String = '', port:int = -1)
+        public function Messenger()
         {
-            this.ip = ip;
-            this.port = port;
         }
         
         //==============================
         // Public Methods
         //==============================
+        
+        public function sendMessage(socket:DatagramSocket, msg:ByteArray, dest:Peer):void
+        {
+            Logger.log("Sending message to: " + dest.ip + ":" + dest.port + " from " + socket.localAddress + ":" + socket.localPort.toString());
+            socket.send(msg, 0, 0, dest.ip, dest.port);
+        }
         
         //==============================
         // Private, Protected Methods
