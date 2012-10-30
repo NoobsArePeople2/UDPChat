@@ -1,8 +1,10 @@
 package net
 {
     import flash.events.DatagramSocketDataEvent;
+    import flash.events.TimerEvent;
     import flash.net.DatagramSocket;
     import flash.utils.ByteArray;
+    import flash.utils.Timer;
     
     import util.Logger;
 
@@ -15,6 +17,9 @@ package net
         // Constants
         //==============================
         
+        private const DELAY:int = 250;
+        private const TIME_OUT:Number = 2 * 1000; // in ms
+        
         //==============================
         // Vars
         //==============================
@@ -26,6 +31,10 @@ package net
         
         private var messenger:Messenger;
         private var msg:ByteArray;
+        
+        private var accumulator:Number;
+        
+        private var timer:Timer;
         
         //==============================
         // Properties
@@ -55,6 +64,9 @@ package net
             msg = new ByteArray();
             clients = new Vector.<Peer>();
             
+            timer = new Timer(DELAY);
+            timer.addEventListener(TimerEvent.TIMER, onTimer);
+            
             var addresses:Vector.<Peer> = Net.findInterfaces();
             sockets = new Vector.<DatagramSocket>(addresses.length);
             var s:DatagramSocket;
@@ -67,6 +79,28 @@ package net
                     sockets[index] = s;
                 }
             );
+        }
+        
+        public function disconnect():void
+        {
+            if (accumulator < 0)
+            {
+                return;
+            }
+            
+            accumulator = -TIME_OUT;
+            Logger.log("Disconnecting.");
+            msg.position = 0;
+            msg.length = 0;
+            msg.writeUTFBytes("**DISCONNECTING**");
+            
+            clients.forEach(function(client:Peer, index:int, vec:Vector.<Peer>):void
+                {
+                    messenger.sendMessage(socket, msg, client);    
+                }
+            );
+            
+            shutdown();
         }
         
         public function shutdown():void
@@ -90,6 +124,14 @@ package net
                 sockets = null;
             }
             
+            if (timer)
+            {
+                timer.stop();
+                timer.removeEventListener(TimerEvent.TIMER, onTimer);
+                timer = null;
+            }
+            
+            accumulator = 0;
             msg = null;
             messenger = null;
             clients = null;
@@ -107,12 +149,25 @@ package net
         private function onData(e:DatagramSocketDataEvent):void
         {
             // Filter connections
-            if (!Net.isFromPeer(e.srcAddress, clients))
+            var peer:Peer = Net.isFromPeer(e.srcAddress, clients);
+            if (!peer)
             {
                 return;
             }
             
+            accumulator = 0;
             Logger.log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
+            messenger.sendMessage(socket, e.data, peer);
+        }
+        
+        private function onTimer(e:TimerEvent):void
+        {
+            accumulator += DELAY;
+            Logger.log("Accumulator: " + accumulator);
+            if (accumulator > TIME_OUT)
+            {
+                disconnect();
+            }
         }
         
         /**
@@ -124,6 +179,7 @@ package net
             {
                 if (e.data.readUnsignedInt() == Protocol.ID)
                 {
+                    accumulator = 0;
                     Logger.log("CONNECTION FROM: " + e.srcAddress + ": " + e.srcPort);
                     // The socket that's getting data
                     socket = e.target as DatagramSocket;
@@ -152,6 +208,9 @@ package net
                     msg.writeUnsignedInt(Protocol.ID);
                     msg.writeUTFBytes("**WE BE CONNECTED**");
                     messenger.sendMessage(socket, msg, client);
+                    
+                    accumulator = 0;
+                    timer.start();
                 }
             }
         }

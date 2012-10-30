@@ -35,7 +35,7 @@
             
             private function doConnect():void
             {
-                if (client || client)
+                if (client || server)
                 {
                     Logger.log("ERROR: client already running.");
                     return;
@@ -105,11 +105,11 @@
             
             private function log(msg:String):void
             {
-                trace(msg);
                 if (logArea)
                 {
                     logArea.text += msg;
                     logArea.text += "\n";
+                    logArea.scrollToRange(logArea.text.length - 2, logArea.text.length - 1);
                 }
             }
              

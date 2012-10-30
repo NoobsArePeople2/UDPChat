@@ -70,19 +70,19 @@ package net
             return addrs;
         }
         
-        public static function isFromPeer(srcIp:String, peers:Vector.<Peer>):Boolean
+        public static function isFromPeer(srcIp:String, peers:Vector.<Peer>):Peer
         {
             var i:int = peers.length - 1;
             while (i > -1)
             {
                 if (peers[i].ip == srcIp)
                 {
-                    return true;
+                    return peers[i];
                 }
                 --i;
             }
             
-            return false;
+            return null;
         }
         
         //==============================
