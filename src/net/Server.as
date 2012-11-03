@@ -4,6 +4,7 @@ package net
     import flash.events.TimerEvent;
     import flash.net.DatagramSocket;
     import flash.utils.ByteArray;
+    import flash.utils.Dictionary;
     import flash.utils.Timer;
     
     import util.Logger;
@@ -36,6 +37,11 @@ package net
         
         private var timer:Timer;
         
+        private var localSequence:int;
+        private var remoteSequences:Dictionary;
+        
+        private var protocol:Protocol;
+        
         //==============================
         // Properties
         //==============================
@@ -66,6 +72,10 @@ package net
             
             timer = new Timer(DELAY);
             timer.addEventListener(TimerEvent.TIMER, onTimer);
+            
+            localSequence = 0;
+            remoteSequences = new Dictionary();
+            protocol = new Protocol();
             
             var addresses:Vector.<Peer> = Net.findInterfaces();
             sockets = new Vector.<DatagramSocket>(addresses.length);
@@ -135,6 +145,11 @@ package net
             msg = null;
             messenger = null;
             clients = null;
+            
+            localSequence = 0;
+            remoteSequences = null;
+            protocol = null;
+            
             Logger.log("Server shutdown.");
         }
         
@@ -157,7 +172,18 @@ package net
             
             accumulator = 0;
             Logger.log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
-            messenger.sendMessage(socket, e.data, peer);
+            
+            protocol.readMessage(e.data);
+            
+            if (protocol.sequence > remoteSequences[peer.ip])
+            {
+                remoteSequences[peer.ip] = protocol.sequence;
+            }
+            
+            messenger.sendMessage(socket, 
+                protocol.composeMessage(localSequence, remoteSequences[peer.ip], "Received sequence " + protocol.sequence),
+                peer);
+            localSequence++;
         }
         
         private function onTimer(e:TimerEvent):void
@@ -203,11 +229,15 @@ package net
                     // Add the port that sent this to the list of clients
                     var client:Peer = new Peer(e.srcAddress, e.srcPort);
                     clients.push(client);
+                    remoteSequences[client.ip] = 0;
+                    
                     msg.position = 0;
                     msg.length = 0;
                     msg.writeUnsignedInt(Protocol.ID);
                     msg.writeUTFBytes("**WE BE CONNECTED**");
                     messenger.sendMessage(socket, msg, client);
+                    
+                    
                     
                     accumulator = 0;
                     timer.start();
