@@ -64,7 +64,7 @@
                 messenger = new Messenger();
                 
                 server = new Server();
-                server.init(messenger, port);
+                server.init(messenger, new Peer('', port));
             }
             
             private function addMessage(msg:String):void

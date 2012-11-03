@@ -11,7 +11,7 @@ package net
     /**
      *
      */
-    public class Client
+    public class Client implements ISocketConnection
     {
         //==============================
         // Constants

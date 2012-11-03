@@ -11,7 +11,7 @@ package net
     /**
      * UDP server.
      */
-    public class Server
+    public class Server implements ISocketConnection
     {
         //==============================
         // Constants
@@ -52,7 +52,7 @@ package net
         // Public Methods
         //==============================
         
-        public function init(messenger:Messenger, port:int):void
+        public function init(messenger:Messenger, peer:Peer):void
         {
             if (this.messenger)
             {
@@ -74,7 +74,7 @@ package net
                 {
                     s = new DatagramSocket();
                     s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                    s.bind(port, addr.ip);
+                    s.bind(peer.port, addr.ip);
                     s.receive();
                     sockets[index] = s;
                 }
