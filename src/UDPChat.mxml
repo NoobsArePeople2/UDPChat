@@ -19,23 +19,25 @@
             import mx.events.FlexEvent;
             
             import net.Client;
+            import net.ISocketConnection;
             import net.Messenger;
             import net.Peer;
             import net.Server;
             
             import util.Logger;
             
-            private var server:Server;
-            private var client:Client;
-            
+            private var connection:ISocketConnection;
+           
             private var targetIp:String;
             private var port:int = 54321;
             
             private var messenger:Messenger;
             
+            private var logLines:Vector.<String> = new Vector.<String>();
+            
             private function doConnect():void
             {
-                if (client || server)
+                if (connection)
                 {
                     Logger.log("ERROR: client already running.");
                     return;
@@ -43,8 +45,8 @@
                 
                 messenger = new Messenger();
                 
-                client = new Client();
-                client.init(messenger, new Peer(targetIp, port));
+                connection = new Client();
+                connection.init(messenger, new Peer(targetIp, port));
             }
             
             private function onConnectClick(e:MouseEvent):void
@@ -55,7 +57,7 @@
             
             private function onHostClick(e:MouseEvent):void
             {
-                if (server || client)
+                if (connection)
                 {
                     Logger.log("ERROR: server already running.");
                     return;
@@ -63,8 +65,8 @@
                 
                 messenger = new Messenger();
                 
-                server = new Server();
-                server.init(messenger, new Peer('', port));
+                connection = new Server();
+                connection.init(messenger, new Peer('', port));
             }
             
             private function addMessage(msg:String):void
@@ -92,14 +94,9 @@
             
             private function onClose(e:Event):void
             {
-                if (server)
+                if (connection)
                 {
-                    server.shutdown();
-                }
-                
-                if (client)
-                {
-                    client.shutdown();
+                    connection.shutdown();
                 }
             }
             
@@ -107,8 +104,12 @@
             {
                 if (logArea)
                 {
-                    logArea.text += msg;
-                    logArea.text += "\n";
+                    logLines.push(msg);
+                    if (logLines.length > 200)
+                    {
+                        logLines.shift();
+                    }
+                    logArea.text = logLines.join("\n");
                     logArea.scrollToRange(logArea.text.length - 2, logArea.text.length - 1);
                 }
             }

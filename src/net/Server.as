@@ -31,8 +31,7 @@ package net
         private var clients:Vector.<Peer>;
         
         private var messenger:Messenger;
-        private var msg:ByteArray;
-        
+
         private var accumulator:Number;
         
         private var timer:Timer;
@@ -67,7 +66,6 @@ package net
                 return;
             }
             this.messenger = messenger; 
-            msg = new ByteArray();
             clients = new Vector.<Peer>();
             
             timer = new Timer(DELAY);
@@ -100,13 +98,12 @@ package net
             
             accumulator = -TIME_OUT;
             Logger.log("Disconnecting.");
-            msg.position = 0;
-            msg.length = 0;
-            msg.writeUTFBytes("**DISCONNECTING**");
             
             clients.forEach(function(client:Peer, index:int, vec:Vector.<Peer>):void
                 {
-                    messenger.sendMessage(socket, msg, client);    
+                    messenger.sendMessage(socket, 
+                        protocol.composeMessage(localSequence, remoteSequences[client.ip], "**DISCONNECTING**"), 
+                        client);    
                 }
             );
             
@@ -142,7 +139,6 @@ package net
             }
             
             accumulator = 0;
-            msg = null;
             messenger = null;
             clients = null;
             
@@ -171,14 +167,22 @@ package net
             }
             
             accumulator = 0;
-            Logger.log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
             
             protocol.readMessage(e.data);
+            
+            Logger.log("Protocol.sequence: " + protocol.sequence);
+            
+            if (protocol.sequence < 0)
+            {
+                return;
+            }
             
             if (protocol.sequence > remoteSequences[peer.ip])
             {
                 remoteSequences[peer.ip] = protocol.sequence;
             }
+            
+            Logger.log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + protocol.message);
             
             messenger.sendMessage(socket, 
                 protocol.composeMessage(localSequence, remoteSequences[peer.ip], "Received sequence " + protocol.sequence),
@@ -231,11 +235,9 @@ package net
                     clients.push(client);
                     remoteSequences[client.ip] = 0;
                     
-                    msg.position = 0;
-                    msg.length = 0;
-                    msg.writeUnsignedInt(Protocol.ID);
-                    msg.writeUTFBytes("**WE BE CONNECTED**");
-                    messenger.sendMessage(socket, msg, client);
+                    messenger.sendMessage(socket, 
+                        protocol.composeInitMessage("**WE BE CONNECTED**"),
+                        client);
                     
                     
                     

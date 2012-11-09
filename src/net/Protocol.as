@@ -4,6 +4,8 @@ package net
     
     import flash.utils.ByteArray;
     
+    import util.Logger;
+    
     /**
      *
      */
@@ -43,6 +45,22 @@ package net
         //==============================
         
         /**
+         * Composes a message used to initialize a connection.
+         * 
+         * @param message Message to write.
+         * @return The ByteArray message to send.
+         */ 
+        public function composeInitMessage(message:String):ByteArray
+        {
+            msg.position = 0;
+            msg.length = 0;
+            
+            msg.writeUnsignedInt(Protocol.ID);
+            msg.writeUTFBytes(message);
+            return msg;
+        }
+        
+        /**
          * Compose a message that adheres to our protocol.
          * 
          * @param sequence The sequence number of the local computer.
@@ -70,9 +88,17 @@ package net
          */ 
         public function readMessage(message:ByteArray):Protocol
         {
-            sequence = message.readShort();
-            ack = message.readUnsignedInt();
-            this.message = message.readUTFBytes(message.bytesAvailable);
+            if (message.length > 6)
+            {
+                message.position = 0;
+                sequence = message.readShort();
+                ack = message.readUnsignedInt();
+                this.message = message.readUTFBytes(message.bytesAvailable);
+            }
+            else
+            {
+                sequence = -1;
+            }
             
             return this;
         }

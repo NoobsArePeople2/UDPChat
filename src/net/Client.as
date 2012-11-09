@@ -50,9 +50,9 @@ package net
         private var messenger:Messenger;
         
         /**
-         * Data to be sent by <code>messenger</code>.
-         */ 
-        private var msg:ByteArray;
+         * Protocol for sending and receiving messages over the network.
+         */
+        private var protocol:Protocol;
         
         /**
          * Number of seconds since last received packet.
@@ -60,6 +60,16 @@ package net
         private var accumulator:Number;
         
         private var timer:Timer;
+        
+        /**
+         * Local message sequence.
+         */
+        private var localSequence:int;
+        
+        /**
+         * Remote message sequence.
+         */ 
+        private var remoteSequence:uint;
         
         //==============================
         // Properties
@@ -87,11 +97,14 @@ package net
             }
             
             this.messenger = messenger;
-            msg = new ByteArray();
             this.host = host;
             
             timer = new Timer(DELAY);
             timer.addEventListener(TimerEvent.TIMER, onTimer);
+            
+            localSequence = 0;
+            remoteSequence = 0;
+            protocol = new Protocol();
             
             var addresses:Vector.<Peer> = Net.findInterfaces();
             sockets = new Vector.<DatagramSocket>(addresses.length);
@@ -104,11 +117,7 @@ package net
                     s.receive();
                     sockets[index] = s;
                     
-                    msg.position = 0;
-                    msg.length = 0;
-                    msg.writeUnsignedInt(Protocol.ID);
-                    msg.writeUTFBytes("**HELLO**");
-                    messenger.sendMessage(s, msg, host); 
+                    messenger.sendMessage(s, protocol.composeInitMessage("**HELLO**"), host); 
                 }
             );
             
@@ -124,10 +133,10 @@ package net
             
             accumulator = -TIME_OUT;
             Logger.log("Disconnecting.");
-            msg.position = 0;
-            msg.length = 0;
-            msg.writeUTFBytes("**DISCONNECTING**");
-            messenger.sendMessage(socket, msg, host);
+            
+            messenger.sendMessage(socket, 
+                protocol.composeMessage(localSequence, remoteSequence, "**DISCONNECTING**"), 
+                host);
             
             shutdown();
         }
@@ -160,7 +169,10 @@ package net
                 timer = null;
             }
             
-            msg = null;
+            localSequence = 0;
+            remoteSequence = 0;
+            protocol = null;
+            
             messenger = null;
             host = null;
             Logger.log("Client shutdown.");
@@ -183,8 +195,26 @@ package net
             }
             
             accumulator = 0;
-            Logger.log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + e.data.readUTFBytes(e.data.bytesAvailable));
-            messenger.sendMessage(socket, e.data, host);
+            
+            
+            protocol.readMessage(e.data);
+            
+            if (protocol.sequence < 0)
+            {
+                return;
+            }
+            
+            if (protocol.sequence > remoteSequence)
+            {
+                remoteSequence = protocol.sequence;
+            }
+            
+            Logger.log("Them (" + e.srcAddress + ": " + e.srcPort + "): " + protocol.message);
+            
+            messenger.sendMessage(socket, 
+                protocol.composeMessage(localSequence, remoteSequence, "Received sequence " + protocol.sequence),
+                host);
+            localSequence++;
         }
         
         private function onTimer(e:TimerEvent):void
@@ -227,10 +257,8 @@ package net
                     host.ip = e.srcAddress;
                     host.port = e.srcPort;
                     
-                    msg.position = 0;
-                    msg.length = 0;
-                    msg.writeUTFBytes("**WE BE CONNECTED**");
-                    messenger.sendMessage(socket, msg, host);
+                    messenger.sendMessage(socket, protocol.composeMessage(localSequence, remoteSequence, "**WE BE CONNECTED**"), host);
+                    localSequence++;
                 }
             }
         }
