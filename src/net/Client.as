@@ -196,7 +196,6 @@ package net
             
             accumulator = 0;
             
-            
             protocol.readMessage(e.data);
             
             if (protocol.sequence < 0)
