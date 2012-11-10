@@ -4,7 +4,7 @@ package net
     import flash.utils.Endian;
 
     /**
-     *
+     * A Bitfield.
      */
     public class Bitfield
     {
@@ -73,6 +73,13 @@ package net
         // Public Methods
         //==============================
         
+        /**
+         * Set the bit at the specified <code>index</code>.
+         * 
+         * @param index Index of the bit to set.
+         * @param value Value (1 or 0) to set on the bit.
+         * @return This <code>Bitfield</code>.
+         */ 
         public function setBitAt(index:uint, value:uint = 1):Bitfield
         {
             bits[getFieldIndex(index)] |= (value << convertIndex(index));
@@ -80,11 +87,23 @@ package net
             return this;
         }
         
+        /**
+         * Checks if the bit at the specified index is set.
+         * 
+         * @param index Index to test.
+         * @return <code>true</code> if the bit is set, <code>false</code> if not.
+         */ 
         public function hasBitAt(index:uint):Boolean
         {
             return (bits[getFieldIndex(index)] & (1 << convertIndex(index))) != 0;
         }
         
+        /**
+         * Clears the bit at the specified index.
+         * 
+         * @param index Index of the bit to clear.
+         * @return This <code>Bitfield</code>. 
+         */
         public function clearBitAt(index:uint):Bitfield
         {
             bits[getFieldIndex(index)] |= (0 << convertIndex(index));
@@ -92,6 +111,11 @@ package net
             return this;
         }
         
+        /**
+         * Clears all bits on this field.
+         * 
+         * @return This <code>Bitfield</code>.
+         */ 
         public function clearBits():Bitfield
         {
             bits[0] = 0;
@@ -102,6 +126,11 @@ package net
             return this;
         }
         
+        /**
+         * Writes this <code>Bitfield</code> to a ByteArray.
+         * 
+         * @return The ByteArray.
+         */ 
         public function toBytes():ByteArray
         {
             bytes.position = 0;
@@ -114,6 +143,13 @@ package net
             return bytes;
         }
         
+        /**
+         * Reads a ByteArray from <code>toBytes()</code> into
+         * this Bitfield.
+         * 
+         * @param ba Bytes to read.
+         * @return This <code>Bitfield</code>.
+         */ 
         public function fromBytes(ba:ByteArray):Bitfield
         {
             ba.position = 0;
@@ -124,6 +160,9 @@ package net
             return this;
         }
         
+        /**
+         * String representation of this <code>Bitfield</code>.
+         */
         public function toString():String
         {
             return bits[3].toString(2) + " " + bits[2].toString(2) + " " + bits[1].toString(2) + " " + bits[0].toString(2);
@@ -133,6 +172,9 @@ package net
         // Private, Protected Methods
         //==============================
         
+        /**
+         * Converts the index so we access the correct uint.
+         */ 
         private function convertIndex(index:uint):uint
         {
             if (index < 8)
@@ -151,6 +193,9 @@ package net
             return index - 24;
         }
         
+        /**
+         * Gets the correct uint field based on the index.
+         */ 
         private function getFieldIndex(index:uint):uint
         {
             if (index < 8)
