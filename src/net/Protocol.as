@@ -3,6 +3,7 @@ package net
     import com.adobe.crypto.MD5;
     
     import flash.utils.ByteArray;
+    import flash.utils.Endian;
     
     /**
      *
@@ -36,6 +37,7 @@ package net
         public function Protocol()
         {
             msg = new ByteArray();
+            msg.endian = Endian.LITTLE_ENDIAN;
         }
         
         //==============================
