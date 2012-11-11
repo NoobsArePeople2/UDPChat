@@ -73,12 +73,6 @@ package net
          */ 
         public function clear():AckSequence
         {
-//            queue.forEach(function(ack:uint, index:int, vec:Vector.<uint>):void
-//                {
-//                    vec[index] = 0;
-//                }
-//            );
-            
             var len:int = queue.length;
             for (var i:int = 0; i < len; ++i)
             {
@@ -96,14 +90,6 @@ package net
         public function writeBytes():ByteArray
         {
             bits.clearBits();
-//            queue.forEach(function(ack:uint, index:int, vec:Vector.<uint>):void
-//                {
-//                    if (ack > 0)
-//                    {
-//                        bits.setBitAt(index);
-//                    }
-//                }
-//            );
             
             var len:int = queue.length;
             for (var i:int = 0; i < len; ++i)
@@ -130,12 +116,6 @@ package net
             bits.readBytes(bytes);
             clear();
             
-//            queue.forEach(function(ack:uint, index:int, vec:Vector.<uint>):void
-//                {
-//                    vec[index] = bits.hasBitAt(index) ? 1 : 0;
-//                }
-//            );
-            
             var len:int = queue.length;
             for (var i:int = 0; i < len; ++i)
             {
@@ -146,12 +126,7 @@ package net
         public function toString():String
         {
             var s:String = "Sequence: " + sequence;
-//            queue.forEach(function(ack:uint, index:int, vec:Vector.<uint>):void
-//                {
-//                    s += ", [" + index + "]: " + ack;
-//                }
-//            );
-            
+
             var len:int = queue.length;
             for (var i:int = 0; i < len; ++i)
             {
@@ -172,22 +147,6 @@ package net
          */ 
         private function shift(amount:uint):void
         {
-//            var size:uint = queue.length;
-//            var i:int;
-//            queue.forEach(function(ack:uint, index:int, vec:Vector.<uint>):void
-//                {
-//                    i = index + amount;
-//                    if (i >= size)
-//                    {
-//                        vec[index] = 0;
-//                    }
-//                    else
-//                    {
-//                        vec[index] = vec[i];
-//                    }
-//                }
-//            );
-            
             var len:int = queue.length;
             var index:int;
             for (var i:int = 0; i < len; ++i)
