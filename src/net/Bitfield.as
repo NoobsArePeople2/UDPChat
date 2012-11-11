@@ -4,7 +4,7 @@ package net
     import flash.utils.Endian;
 
     /**
-     * A Bitfield.
+     * A 32-bit Bitfield.
      */
     public class Bitfield
     {
@@ -129,9 +129,9 @@ package net
         /**
          * Writes this <code>Bitfield</code> to a ByteArray.
          * 
-         * @return The ByteArray.
+         * @return A 4 byte ByteArray.
          */ 
-        public function toBytes():ByteArray
+        public function writeBytes():ByteArray
         {
             bytes.position = 0;
             bytes.writeByte(bits[0]);
@@ -150,13 +150,15 @@ package net
          * @param ba Bytes to read.
          * @return This <code>Bitfield</code>.
          */ 
-        public function fromBytes(ba:ByteArray):Bitfield
+        public function readBytes(ba:ByteArray):Bitfield
         {
-            ba.position = 0;
-            bits[0] = ba.readByte();
-            bits[1] = ba.readByte();
-            bits[2] = ba.readByte();
-            bits[3] = ba.readByte();
+            bytes.position = 0;
+            ba.readBytes(bytes, 0, 4);
+            bytes.position = 0;
+            bits[0] = bytes.readByte();
+            bits[1] = bytes.readByte();
+            bits[2] = bytes.readByte();
+            bits[3] = bytes.readByte();
             return this;
         }
         

@@ -30,6 +30,10 @@ package net
         
         public var acks:Vector.<uint>;
         public var ackBitfield:Bitfield;
+        
+        public var remoteAcks:Vector.<uint>;
+        public var remoteAckBitfield:Bitfield;
+        
 
         //==============================
         // Properties
@@ -43,8 +47,12 @@ package net
         {
             msg = new ByteArray();
             msg.endian = Endian.LITTLE_ENDIAN;
+            
             acks = new Vector.<uint>(32);
             ackBitfield = new Bitfield();
+            
+            remoteAcks = new Vector.<uint>(32);
+            remoteAckBitfield = new Bitfield();
         }
         
         //==============================
@@ -82,6 +90,7 @@ package net
             
             msg.writeShort(sequence);
             msg.writeUnsignedInt(ack);
+            msg.writeBytes(composeAcks(), 0, 4);
             msg.writeUTFBytes(message);
             
             return msg;
@@ -95,11 +104,12 @@ package net
          */ 
         public function readMessage(message:ByteArray):Protocol
         {
-            if (message.length > 6)
+            if (message.length > 10)
             {
                 message.position = 0;
                 sequence = message.readShort();
                 ack = message.readUnsignedInt();
+                remoteAckBitfield.readBytes(message);
                 this.message = message.readUTFBytes(message.bytesAvailable);
             }
             else
@@ -115,18 +125,27 @@ package net
          */ 
         public function clearAcks():void
         {
-            acks.forEach(function(theAck:uint, index:int, vec:Vector.<uint>):void
-                {
-                    vec[index] = 0;
-                }
-            );
+//            acks.forEach(function(theAck:uint, index:int, vec:Vector.<uint>):void
+//                {
+//                    vec[index] = 0;
+//                }
+//            );
+//            
+            var len:int = acks.length;
+            for (var i:int = 0; i < len; ++i)
+            {
+                acks[i] = 0;
+            }
         }
         
         //==============================
         // Private, Protected Methods
         //==============================
         
-        public function composeAcks():ByteArray
+        /**
+         * Composes the acks <code>Bitfield</code.
+         */ 
+        private function composeAcks():ByteArray
         {
             ackBitfield.clearBits();
             var i:int = 31;
@@ -136,7 +155,7 @@ package net
                 --i;
             }
             
-            return ackBitfield.toBytes();
+            return ackBitfield.writeBytes();
         }
         
         //==============================

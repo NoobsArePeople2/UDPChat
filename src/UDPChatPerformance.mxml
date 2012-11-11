@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication 
+    xmlns:fx="http://ns.adobe.com/mxml/2009" 
+    xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    creationComplete="onCreationComplete(event)">
+    <fx:Declarations>
+        <!-- Place non-visual elements (e.g., services, value objects) here -->
+    </fx:Declarations>
+    
+    <fx:Script>
+        <![CDATA[
+            import com.gskinner.utils.PerformanceTest;
+            
+            import mx.events.FlexEvent;
+            
+            import performance.tests.AckSequenceTest;
+            import performance.tests.BitfieldTest;
+            import performance.tests.LoopTest;
+            
+            private var loopTest:LoopTest;
+            private var ackSequenceTest:AckSequenceTest;
+            private var bitfieldTest:BitfieldTest;
+            
+            private function onCreationComplete(e:FlexEvent):void
+            {
+                var t:Timer = new Timer(2000, 1);
+                t.addEventListener(TimerEvent.TIMER_COMPLETE, onTimer);
+                
+                var pt:PerformanceTest = PerformanceTest.getInstance();
+                
+                loopTest = new LoopTest(pt);
+                ackSequenceTest = new AckSequenceTest(pt);
+                bitfieldTest = new BitfieldTest(pt);
+                
+                t.start();
+            }
+            
+            private function runTests():void
+            {
+                trace("[UDPChatPerformance] Running tests...");
+                
+//                bitfieldTest.doTest();
+                ackSequenceTest.doTest();
+//                loopTest.doTest();
+                
+                trace("[UDPChatPerformance] Tests Finished!");
+            }
+            
+            private function onTimer(e:TimerEvent):void
+            {
+                e.currentTarget.removeEventListener(TimerEvent.TIMER_COMPLETE, onTimer);
+                runTests();
+            }
+            
+        ]]>
+    </fx:Script>
+    
+</s:WindowedApplication>

@@ -109,17 +109,30 @@ package net
             var addresses:Vector.<Peer> = Net.findInterfaces();
             sockets = new Vector.<DatagramSocket>(addresses.length);
             var s:DatagramSocket;
-            addresses.forEach(function(addr:Peer, index:int, vec:Vector.<Peer>):void
-                {
-                    s = new DatagramSocket();
-                    s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                    s.bind(host.port, addr.ip);
-                    s.receive();
-                    sockets[index] = s;
-                    
-                    messenger.sendMessage(s, protocol.composeInitMessage("**HELLO**"), host); 
-                }
-            );
+//            addresses.forEach(function(addr:Peer, index:int, vec:Vector.<Peer>):void
+//                {
+//                    s = new DatagramSocket();
+//                    s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
+//                    s.bind(host.port, addr.ip);
+//                    s.receive();
+//                    sockets[index] = s;
+//                    
+//                    messenger.sendMessage(s, protocol.composeInitMessage("**HELLO**"), host); 
+//                }
+//            );
+            var len:int = addresses.length;
+            var addr:Peer;
+            for (var i:int = 0; i < len; ++i)
+            {
+                addr = addresses[i];
+                s = new DatagramSocket();
+                s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
+                s.bind(host.port, addr.ip);
+                s.receive();
+                sockets[i] = s;
+                
+                messenger.sendMessage(s, protocol.composeInitMessage("**HELLO**"), host);
+            }
             
             timer.start();
         }
@@ -153,12 +166,20 @@ package net
             
             if (sockets)
             {
-                sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
-                    {
-                        sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                        sock.close();
-                    }
-                );
+//                sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
+//                    {
+//                        sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+//                        sock.close();
+//                    }
+//                );
+                var len:int = sockets.length;
+                var sock:DatagramSocket;
+                for (var i:int = 0; i < len; ++i)
+                {
+                    sock = sockets[i];
+                    sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+                    sock.close();
+                }
                 sockets = null;
             }
             
@@ -238,15 +259,28 @@ package net
                     socket = e.target as DatagramSocket;
                     
                     // Clear out all other sockets
-                    sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
+//                    sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
+//                        {
+//                            if (sock != socket)
+//                            {
+//                                sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+//                                sock.close();
+//                            }
+//                        }
+//                    );
+                    
+                    var len:int = sockets.length;
+                    var sock:DatagramSocket;
+                    for (var i:int = 0; i < len; ++i)
+                    {
+                        sock = sockets[i];
+                        if (sock != socket)
                         {
-                            if (sock != socket)
-                            {
-                                sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                                sock.close();
-                            }
+                            sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+                            sock.close();
                         }
-                    );
+                    }
+                    
                     sockets = null;
                     
                     // Set up the socket

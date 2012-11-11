@@ -37,7 +37,10 @@ package net
         private var timer:Timer;
         
         private var localSequence:int;
+        private var localAcks:Vector.<uint>;
+        
         private var remoteSequences:Dictionary;
+        private var remoteAcks:Dictionary;
         
         private var protocol:Protocol;
         
@@ -73,20 +76,36 @@ package net
             
             localSequence = 0;
             remoteSequences = new Dictionary();
+            
+            localAcks = new Vector.<uint>(32);
+            remoteAcks = new Dictionary();
+            
             protocol = new Protocol();
             
             var addresses:Vector.<Peer> = Net.findInterfaces();
             sockets = new Vector.<DatagramSocket>(addresses.length);
             var s:DatagramSocket;
-            addresses.forEach(function(addr:Peer, index:int, vec:Vector.<Peer>):void
-                {
-                    s = new DatagramSocket();
-                    s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                    s.bind(peer.port, addr.ip);
-                    s.receive();
-                    sockets[index] = s;
-                }
-            );
+//            addresses.forEach(function(addr:Peer, index:int, vec:Vector.<Peer>):void
+//                {
+//                    s = new DatagramSocket();
+//                    s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
+//                    s.bind(peer.port, addr.ip);
+//                    s.receive();
+//                    sockets[index] = s;
+//                }
+//            );
+            
+            var len:int = addresses.length;
+            var addr:Peer;
+            for (var i:int = 0; i < len; ++i)
+            {
+                addr = addresses[i];
+                s = new DatagramSocket();
+                s.addEventListener(DatagramSocketDataEvent.DATA, onSetup);
+                s.bind(peer.port, addr.ip);
+                s.receive();
+                sockets[i] = s;
+            }
         }
         
         public function disconnect():void
@@ -99,13 +118,23 @@ package net
             accumulator = -TIME_OUT;
             Logger.log("Disconnecting.");
             
-            clients.forEach(function(client:Peer, index:int, vec:Vector.<Peer>):void
-                {
-                    messenger.sendMessage(socket, 
-                        protocol.composeMessage(localSequence, remoteSequences[client.ip], "**DISCONNECTING**"), 
-                        client);    
-                }
-            );
+//            clients.forEach(function(client:Peer, index:int, vec:Vector.<Peer>):void
+//                {
+//                    messenger.sendMessage(socket, 
+//                        protocol.composeMessage(localSequence, remoteSequences[client.ip], "**DISCONNECTING**"), 
+//                        client);    
+//                }
+//            );
+            
+            var len:int = clients.length;
+            var client:Peer;
+            for (var i:int = 0; i < len; ++i)
+            {
+                client = clients[i];
+                messenger.sendMessage(socket, 
+                    protocol.composeMessage(localSequence, remoteSequences[client.ip], "**DISCONNECTING**"), 
+                    client);
+            }
             
             shutdown();
         }
@@ -122,12 +151,22 @@ package net
             
             if (sockets)
             {
-                sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
-                    {
-                        sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                        sock.close();
-                    }
-                );
+//                sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
+//                    {
+//                        sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+//                        sock.close();
+//                    }
+//                );
+                
+                var len:int = sockets.length;
+                var sock:DatagramSocket;
+                for (var i:int = 0; i < len; ++i)
+                {
+                    sock = sockets[i];
+                    sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+                    sock.close();
+                }
+                
                 sockets = null;
             }
             
@@ -215,15 +254,28 @@ package net
                     socket = e.target as DatagramSocket;
                     
                     // Clear out all the others
-                    sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
+//                    sockets.forEach(function(sock:DatagramSocket, index:int, vec:Vector.<DatagramSocket>):void
+//                        {
+//                            if (sock != socket)
+//                            {
+//                                sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+//                                sock.close();
+//                            }
+//                        }
+//                    );
+                    
+                    var len:int = sockets.length;
+                    var sock:DatagramSocket;
+                    for (var i:int = 0; i < len; ++i)
+                    {
+                        sock = sockets[i];
+                        if (sock != socket)
                         {
-                            if (sock != socket)
-                            {
-                                sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
-                                sock.close();
-                            }
+                            sock.removeEventListener(DatagramSocketDataEvent.DATA, onSetup);
+                            sock.close();
                         }
-                    );
+                    }
+                    
                     sockets = null;
 
                     // Set up the socket
@@ -234,6 +286,7 @@ package net
                     var client:Peer = new Peer(e.srcAddress, e.srcPort);
                     clients.push(client);
                     remoteSequences[client.ip] = 0;
+                    remoteAcks[client.ip] = new AckSequence();
                     
                     messenger.sendMessage(socket, 
                         protocol.composeInitMessage("**WE BE CONNECTED**"),
