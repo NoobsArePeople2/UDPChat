@@ -16,11 +16,13 @@
             
             import performance.tests.AckSequenceTest;
             import performance.tests.BitfieldTest;
+            import performance.tests.ByteArrayTest;
             import performance.tests.LoopTest;
             
             private var loopTest:LoopTest;
             private var ackSequenceTest:AckSequenceTest;
             private var bitfieldTest:BitfieldTest;
+            private var byteArrayTest:ByteArrayTest;
             
             private function onCreationComplete(e:FlexEvent):void
             {
@@ -32,6 +34,7 @@
                 loopTest = new LoopTest(pt);
                 ackSequenceTest = new AckSequenceTest(pt);
                 bitfieldTest = new BitfieldTest(pt);
+                byteArrayTest = new ByteArrayTest(pt);
                 
                 t.start();
             }
@@ -40,8 +43,9 @@
             {
                 trace("[UDPChatPerformance] Running tests...");
                 
+                byteArrayTest.doTest();
 //                bitfieldTest.doTest();
-                ackSequenceTest.doTest();
+//                ackSequenceTest.doTest();
 //                loopTest.doTest();
                 
                 trace("[UDPChatPerformance] Tests Finished!");
