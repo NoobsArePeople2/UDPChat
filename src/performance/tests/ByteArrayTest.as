@@ -120,6 +120,9 @@ package performance.tests
             pt.testFunction(sizeDeflate, iterations, "sizeDeflate");
             log("Deflate Avg Size...Compressed/Uncompressed........" + (totalCompressedBytes/iterations) + " / " + (totalBytes/iterations));
             
+            pt.testFunction(readFromCompressed, 1, "readFromCompressed");
+            pt.testFunction(readFromUncompressed, 1, "readFromUncompressed");
+            
         }
         
         //==============================
@@ -203,6 +206,39 @@ package performance.tests
             compressedBytes.compress(CompressionAlgorithm.DEFLATE);
             totalCompressedBytes += compressedBytes.length;
             compressedBytes.uncompress(CompressionAlgorithm.DEFLATE);
+        }
+        
+        private function readFromCompressed():void
+        {
+            compressedBytes.compress(CompressionAlgorithm.DEFLATE);
+            
+            try
+            {
+                compressedBytes.readShort();
+                log("Read from compressed ByteArray");
+            }
+            catch(e:Error)
+            {
+                log("Error reading from compressed ByteArray");
+            }
+            
+            compressedBytes.uncompress(CompressionAlgorithm.DEFLATE);
+        }
+        
+        private function readFromUncompressed():void
+        {
+            compressedBytes.compress(CompressionAlgorithm.DEFLATE);
+            compressedBytes.uncompress(CompressionAlgorithm.DEFLATE);
+            
+            try
+            {
+                var value:uint = compressedBytes.readShort();
+                log("Read '" + value + "' from compressed ByteArray");
+            }
+            catch(e:Error)
+            {
+                log("Error reading from compressed ByteArray");
+            }
         }
         
         /**
