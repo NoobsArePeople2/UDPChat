@@ -6,7 +6,7 @@
   <description>Ant build script for UDPChat</description>
 
   <property
-    file="ant/build.win.properties"/>
+    file="ant/build.mac.properties"/>
 
   <!-- The initialization process -->
   <target
@@ -98,7 +98,7 @@
       <arg value="-target"/>
       <arg value="bundle"/>
 
-      <arg value="${BIN_DIR}/UDPChat"/>
+      <arg value="${BIN_DIR}/${EXE}"/>
       <arg value=""/>
       <arg value="${BIN_DIR}/${APP_DESCRIPTOR}"/>
       <arg value=""/>
