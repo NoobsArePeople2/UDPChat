@@ -6,3 +6,5 @@ bin-release/
 .actionScriptProperties
 .flexProperties
 .project
+
+.DS_Store
