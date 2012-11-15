@@ -15,6 +15,8 @@
     <echo message="Initializing..."/>
     <delete dir="${BIN_DIR}"/>
     <mkdir dir="${BIN_DIR}"/>
+  	
+  	<mkdir dir="${BIN_DIR}/out"/>
 
   </target>
 
@@ -36,7 +38,7 @@
       <arg value="-static-link-runtime-shared-libraries=true"/>
       <arg value="-library-path+=${FLEX_HOME}/frameworks/libs"/>
       <arg value="-library-path+=${FLEX_HOME}/frameworks/libs/air"/>
-      <arg value="-target-player=11.4"/>
+      <arg value="-target-player=11.5"/>
     	
       <arg value="-include-libraries=${LIBS_DIR}/as3corelib.swc"/>
 
@@ -52,7 +54,7 @@
   	<copy
       toFile="${BIN_DIR}/${APP_DESCRIPTOR}"
       file="${MANIFESTS_DIR}/${APP_DESCRIPTOR}"/>
-  	
+    
   	<replace
 	  file="${BIN_DIR}/${APP_DESCRIPTOR}"
 	  token="[This value will be overwritten by Flash Builder in the output app.xml]"
@@ -79,6 +81,9 @@
   	<!-- 
   		See: http://help.adobe.com/en_US/air/build/WSfffb011ac560372f709e16db131e43659b9-8000.html
   	--> 
+  	
+  	<echo message="${BIN_DIR}/${EXE}"/>
+  	<echo message="${BIN_DIR}/${APP_DESCRIPTOR}"/>
   	
     <exec
       executable="${ADT}"
